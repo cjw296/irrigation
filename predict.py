@@ -6,8 +6,12 @@ from io import StringIO
 from dateutil.parser import parse as parse_date
 import requests
 
-# https://metdata.reading.ac.uk/ext/dataset/climat0900/get_data?token=public&start_date=2020-08-01-18:50:27&end_date=2020-08-13-18:50:27&var=Rain_accum_0909&missing=NaN&data_format=csv
-# https://metdata.reading.ac.uk/ext/dataset/1hour_Level2/get_data?token=public&start_date=2020-08-06-00:00:00&end_date=2020-08-13-22:49:27&var=Rain&var=Rain_accum_der&missing=NaN&data_format=csv'
+ZONE_TO_MM_PER_MIN = {
+    'house': 0.097944482495229,
+    'terrace': 0.093639004859511,
+}
+
+WEEKLY_DESIRED_MM = 25.4
 
 
 def last_sunday():
@@ -52,16 +56,31 @@ def reading_uni_rainfall(start, end):
 
     latest = start
 
-    print(f'Between {earliest} and {latest}, {rain:.1f}mm of rain has fallen')
+    print(f'Between {earliest} and {latest}, {rain:.1f}mm of rain has fallen.')
     return rain
+
+
+def print_mm_still_needed(zone, mm_per_min, rain, watering, required=WEEKLY_DESIRED_MM):
+    received = watering * ZONE_TO_MM_PER_MIN[zone] + rain
+    still_needed = max(required-received, 0)/mm_per_min
+    print(f'{zone.capitalize()} has had {received:.1f} mm '
+          f'and needs {still_needed:.0f} mins of watering.')
+
+
+def comma_ints(text):
+    return sum(int(t) for t in text.split(','))
 
 
 def main():
     parser = ArgumentParser()
     parser.add_argument('--start', default=last_sunday(), type=parse_date)
     parser.add_argument('--end', default=datetime.now(), type=parse_date)
+    for zone in ZONE_TO_MM_PER_MIN:
+        parser.add_argument('--'+zone, type=comma_ints, default=0, help='watering this week (min)')
     args = parser.parse_args()
     rain = reading_uni_rainfall(args.start, args.end)
+    for zone, mm_per_min in ZONE_TO_MM_PER_MIN.items():
+        print_mm_still_needed(zone, mm_per_min, rain, watering=getattr(args, zone))
 
 
 if __name__ == '__main__':
