@@ -24,7 +24,11 @@ def last_sunday():
 def reader(content):
     r = csv_reader(StringIO(content))
     next(r)  # header
-    next(r)  # units
+    try:
+        next(r)  # units
+    except StopIteration:
+        # empty?
+        return
     for dt, value in r:
         yield parse_date(dt), float(value)
 
@@ -52,6 +56,8 @@ def reading_uni_rainfall(start, end):
         rain += value
     start += timedelta(hours=1)
     for start, value in download('1hour_Level2', 'Rain', start, end):
+        if earliest is None:
+            earliest = start-timedelta(hours=1)
         rain += value
 
     latest = start
