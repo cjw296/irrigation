@@ -68,8 +68,9 @@ def reading_uni_rainfall(start, end):
 
 def print_mm_still_needed(zone, mm_per_min, rain, watering, required=WEEKLY_DESIRED_MM):
     received = watering * ZONE_TO_MM_PER_MIN[zone] + rain
+    pct = received/required
     still_needed = max(required-received, 0)/mm_per_min
-    print(f'{zone.capitalize()} has had {received:.1f} mm '
+    print(f'{zone.capitalize()} has had {received:.1f} mm ({pct:.0%}) '
           f'and needs {still_needed:.0f} mins of watering.')
 
 
