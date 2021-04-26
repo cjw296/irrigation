@@ -3,11 +3,14 @@ from argparse import ArgumentParser
 from csv import DictReader
 from datetime import datetime, timedelta
 from io import StringIO
-from typing import Sequence
+from typing import Iterable, List
 
-import requests
 import pandas as pd
+import requests
+from sqlalchemy.orm import Session
 
+from db import connect
+from schema import Observation
 
 RANGE_LIMITS = {
     'climat0900': 25,
@@ -15,7 +18,7 @@ RANGE_LIMITS = {
 }
 
 
-def download(dataset: str, variables: Sequence[str], start: datetime, end: datetime):
+def download(dataset: str, variables: List[str], start: datetime, end: datetime) -> Iterable[dict]:
     response = requests.get(
         f'https://metdata.reading.ac.uk/ext/dataset/{dataset}/get_data',
         params=dict(
@@ -43,7 +46,7 @@ def time_periods(dataset: str, start: datetime, end: datetime):
     yield section_end, end
 
 
-def retrieve(dataset: str, variables: Sequence[str], start: datetime, end: datetime = None):
+def retrieve(dataset: str, variables: List[str], start: datetime, end: datetime = None):
     end = end or datetime.now()
     for start, end in time_periods(dataset, start, end):
         yield from download(dataset, variables, start, end)
@@ -62,8 +65,25 @@ def main():
     args = parser.parse_args()
 
     start = (pd.Timestamp.now() - timedelta(days=args.days)).floor('D') if args.days else args.start
+
+    session = Session(connect(), future=True)
+    session.query(Observation).where(
+        Observation.timestamp.between(start, args.end),
+        Observation.dataset == args.dataset,
+        Observation.variable.in_(args.variables)
+
+    ).delete(synchronize_session=False)
+
     for row in retrieve(args.dataset, args.variables, start, args.end):
         print(row)
+        for variable in args.variables:
+            session.add(Observation(
+                timestamp=row['TimeStamp'],
+                dataset=args.dataset,
+                variable=variable,
+                value=row[variable]
+            ))
+    session.commit()
 
 
 if __name__ == '__main__':
