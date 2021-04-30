@@ -77,11 +77,14 @@ def main():
     for row in retrieve(args.dataset, args.variables, start, args.end):
         print(row)
         for variable in args.variables:
+            value = row[variable]
+            if value == '':
+                continue
             session.add(Observation(
                 timestamp=row['TimeStamp'],
                 dataset=args.dataset,
                 variable=variable,
-                value=row[variable]
+                value=value
             ))
     session.commit()
 
