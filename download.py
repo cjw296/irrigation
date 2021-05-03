@@ -9,7 +9,7 @@ import pandas as pd
 import requests
 from sqlalchemy.orm import Session
 
-from db import connect
+from data import connect
 from schema import Observation
 
 RANGE_LIMITS = {
