@@ -43,7 +43,7 @@ def time_periods(dataset: str, start: datetime, end: datetime):
     points = pd.date_range(start, end, freq=f'{RANGE_LIMITS[dataset]}D', closed='left')
     section_end = start
     for section_start, section_end in zip(points, points[1:]):
-        yield section_start, section_end
+        yield section_start, section_end-pd.Timedelta(seconds=1)
     yield section_end, end
 
 
