@@ -7,8 +7,10 @@ from typing import Iterable, List
 
 import pandas as pd
 import requests
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from config import config
 from data import connect
 from schema import Observation
 
@@ -53,12 +55,37 @@ def retrieve(dataset: str, variables: List[str], start: datetime, end: datetime 
         yield from download(dataset, variables, start, end)
 
 
+def sync(session, dataset: str, variables: List[str], start: pd.Timestamp, end: pd.Timestamp):
+
+    session.query(Observation).where(
+        Observation.timestamp.between(start, end),
+        Observation.dataset == dataset,
+        Observation.variable.in_(variables)
+
+    ).delete(synchronize_session=False)
+
+    for row in retrieve(dataset, variables, start, end):
+        print(row)
+        for variable in variables:
+            value = row[variable]
+            if value == '':
+                continue
+            session.add(Observation(
+                timestamp=row['TimeStamp'],
+                dataset=dataset,
+                variable=variable,
+                value=value
+            ))
+
+    session.commit()
+
+
 def main():
     now = datetime.now()
 
     parser = ArgumentParser()
     parser.add_argument('dataset')
-    parser.add_argument('variables', nargs='+')
+    parser.add_argument('variables', nargs='*')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--start', type=pd.Timestamp, default=now-timedelta(days=7))
     group.add_argument('--days', type=int)
@@ -68,26 +95,24 @@ def main():
     start = (pd.Timestamp.now() - timedelta(days=args.days)).floor('D') if args.days else args.start
 
     session = Session(connect(), future=True)
-    session.query(Observation).where(
-        Observation.timestamp.between(start, args.end),
-        Observation.dataset == args.dataset,
-        Observation.variable.in_(args.variables)
 
-    ).delete(synchronize_session=False)
+    parameter_sets = []
+    if args.dataset == 'config':
+        for dataset, variables in config.observations.items():
+            rows = session.execute(
+                select(Observation.variable, func.max(Observation.timestamp)).
+                where(Observation.variable.in_(variables)).
+                group_by(Observation.variable)
+            )
+            dataset_start = min(row[1] for row in rows)+timedelta(seconds=1)
+            parameter_sets.append((dataset, variables.data, dataset_start, args.end))
+    else:
+        if not args.variables:
+            parser.error('variables must be specified')
+        parameter_sets.append((args.dataset, args.variables, start, args.end))
 
-    for row in retrieve(args.dataset, args.variables, start, args.end):
-        print(row)
-        for variable in args.variables:
-            value = row[variable]
-            if value == '':
-                continue
-            session.add(Observation(
-                timestamp=row['TimeStamp'],
-                dataset=args.dataset,
-                variable=variable,
-                value=value
-            ))
-    session.commit()
+    for parameter_set in parameter_sets:
+        sync(session, *parameter_set)
 
 
 if __name__ == '__main__':
