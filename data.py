@@ -10,7 +10,7 @@ def db_url():
 
 
 def connect():
-    return create_engine(db_url())
+    return create_engine(db_url(), echo=False)
 
 
 def load_daily():
