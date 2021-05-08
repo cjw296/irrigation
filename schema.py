@@ -20,6 +20,7 @@ class Observation(Base):
     dataset = Column(String, primary_key=True)
     variable = Column(String, primary_key=True)
     value = Column(Float)
+    area_name = Column(String, ForeignKey('area.name'), nullable=True)
 
 
 class Watering(Base):
