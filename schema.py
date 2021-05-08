@@ -32,3 +32,13 @@ class Watering(Base):
     area_name = Column(String, ForeignKey('area.name'))
     source = Column(String)
     mm = Column(Float)
+
+
+class Water(Base):
+
+    __tablename__ = 'water_level'
+
+    timestamp = Column(DateTime, primary_key=True)
+    area_name = Column(String, ForeignKey('area.name'), primary_key=True)
+    source = Column(String)
+    mm = Column(Float)
