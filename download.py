@@ -55,7 +55,8 @@ def retrieve(dataset: str, variables: List[str], start: datetime, end: datetime 
         yield from download(dataset, variables, start, end)
 
 
-def sync(session, dataset: str, variables: List[str], start: pd.Timestamp, end: pd.Timestamp):
+def sync(session, dataset: str, variables: List[str],
+         start: pd.Timestamp, end: pd.Timestamp, debug: bool):
 
     session.query(Observation).where(
         Observation.timestamp.between(start, end),
@@ -64,19 +65,26 @@ def sync(session, dataset: str, variables: List[str], start: pd.Timestamp, end: 
 
     ).delete(synchronize_session=False)
 
-    for row in retrieve(dataset, variables, start, end):
-        print(row)
+    obs_count = row_count = 0
+    latest_timestamp = start
+    for row_count, row in enumerate(retrieve(dataset, variables, start, end), start=1):
+        if debug:
+            print(f'{dataset}:', ' '.join(f'{k}={v}' for k, v in row.items()))
         for variable in variables:
             value = row[variable]
             if value == '':
                 continue
+            timestamp = pd.Timestamp(row['TimeStamp'])
+            latest_timestamp = max(latest_timestamp, timestamp)
             session.add(Observation(
-                timestamp=row['TimeStamp'],
+                timestamp=timestamp,
                 dataset=dataset,
                 variable=variable,
                 value=value
             ))
-
+            obs_count += 1
+    print(f'{dataset}: {row_count} rows giving {obs_count} observations, '
+          f'latest at {latest_timestamp}\n')
     session.commit()
 
 
@@ -90,6 +98,7 @@ def main():
     group.add_argument('--start', type=pd.Timestamp, default=now-timedelta(days=7))
     group.add_argument('--days', type=int)
     parser.add_argument('--end', type=pd.Timestamp, default=now)
+    parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
 
     start = (pd.Timestamp.now() - timedelta(days=args.days)).floor('D') if args.days else args.start
@@ -112,7 +121,7 @@ def main():
         parameter_sets.append((args.dataset, args.variables, start, args.end))
 
     for parameter_set in parameter_sets:
-        sync(session, *parameter_set)
+        sync(session, *parameter_set, debug=args.debug)
 
 
 if __name__ == '__main__':
