@@ -8,6 +8,10 @@ def saturation_vapour_pressure(t):
     return 0.6108 * np.exp((17.27*t)/(t+237.3))
 
 
+def inch_per_foot_to_mm_per_m(value):
+    return value*2.54*10/(12*2.54/100)
+
+
 def evapotranspiration(daily, latitude: float, altitude: float, α: float = 0.23):
     # 0.23 is hypothetical grass reference crop
     Tmax = daily['Tx_0909']
