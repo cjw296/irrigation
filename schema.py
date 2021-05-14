@@ -23,17 +23,6 @@ class Observation(Base):
     area_name = Column(String, ForeignKey('area.name'), nullable=True)
 
 
-class Watering(Base):
-
-    __tablename__ = 'watering'
-
-    id = Column('id', Integer, primary_key=True)
-    date = Column(Date)
-    area_name = Column(String, ForeignKey('area.name'))
-    source = Column(String)
-    mm = Column(Float)
-
-
 class Water(Base):
 
     __tablename__ = 'water_level'
