@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, DateTime, Float, Date, ForeignKey
+from sqlalchemy import Column, String, Integer, DateTime, Float, Date, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -9,7 +9,7 @@ class Area(Base):
     __tablename__ = 'area'
 
     name = Column(String, primary_key=True)
-    area = Column(Integer)
+    irrigation_rate = Column(Float, nullable=False)  # in mm / min
 
 
 class Observation(Base):
