@@ -15,11 +15,15 @@ class Area(Base):
 class Observation(Base):
 
     __tablename__ = 'observation'
+    __table_args__ = (
+        UniqueConstraint('timestamp', 'dataset', 'variable'),
+    )
 
-    timestamp = Column(DateTime, primary_key=True)
-    dataset = Column(String, primary_key=True)
-    variable = Column(String, primary_key=True)
-    value = Column(Float)
+    id = Column(Integer, primary_key=True)
+    timestamp = Column(DateTime, nullable=False)
+    dataset = Column(String, nullable=False)
+    variable = Column(String, nullable=False)
+    value = Column(Float, nullable=False)
     area_name = Column(String, ForeignKey('area.name'), nullable=True)
 
 
