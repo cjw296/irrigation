@@ -16,7 +16,7 @@ class Observation(Base):
 
     __tablename__ = 'observation'
     __table_args__ = (
-        UniqueConstraint('timestamp', 'dataset', 'variable'),
+        UniqueConstraint('timestamp', 'dataset', 'variable', 'area_name'),
     )
 
     id = Column(Integer, primary_key=True)
