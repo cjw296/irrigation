@@ -54,9 +54,10 @@ def comma_ints(text):
 
 
 def main():
+    now = datetime.now()
     parser = ArgumentParser()
-    parser.add_argument('--start', default=last_sunday(), type=parse_date)
-    parser.add_argument('--end', default=datetime.now(), type=parse_date)
+    parser.add_argument('--start', default=now-timedelta(days=7), type=parse_date)
+    parser.add_argument('--end', default=now, type=parse_date)
     for zone in ZONE_TO_MM_PER_MIN:
         parser.add_argument('--'+zone, type=comma_ints, default=0, help='watering this week (min)')
     args = parser.parse_args()
