@@ -84,11 +84,11 @@ def sync(session, dataset: str, variables: List[str],
             ))
             obs_count += 1
     print(f'{dataset}: {row_count} rows giving {obs_count} observations, '
-          f'latest at {latest_timestamp}\n')
+          f'latest at {latest_timestamp}')
     session.commit()
 
 
-def main():
+def main(args=None):
     now = datetime.now()
 
     parser = ArgumentParser()
@@ -99,7 +99,7 @@ def main():
     group.add_argument('--days', type=int)
     parser.add_argument('--end', type=pd.Timestamp, default=now)
     parser.add_argument('--debug', action='store_true')
-    args = parser.parse_args()
+    args = parser.parse_args(args)
 
     start = (pd.Timestamp.now() - timedelta(days=args.days)).floor('D') if args.days else args.start
 

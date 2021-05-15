@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from data import connect
+from download import main as download
 from schema import Observation
 
 ZONE_TO_MM_PER_MIN = {
@@ -61,6 +62,11 @@ def main():
     for zone in ZONE_TO_MM_PER_MIN:
         parser.add_argument('--'+zone, type=comma_ints, default=0, help='watering this week (min)')
     args = parser.parse_args()
+
+    download(['config'])
+
+    print()
+
     rain = reading_uni_rainfall(args.start, args.end)
     for zone, mm_per_min in ZONE_TO_MM_PER_MIN.items():
         print_mm_still_needed(zone, mm_per_min, rain, watering=getattr(args, zone))
