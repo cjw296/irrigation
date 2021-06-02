@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from config import config
+
 π = np.pi
 
 
@@ -12,7 +14,13 @@ def inch_per_foot_to_mm_per_m(value):
     return value*2.54*10/(12*2.54/100)
 
 
-def evapotranspiration(daily, latitude: float, altitude: float, α: float = 0.23):
+def evapotranspiration(daily, latitude: float = None, altitude: float = None, α: float = 0.23):
+
+    if latitude is None:
+        latitude = config.location.latitude
+    if altitude is None:
+        altitude = config.location.altitude
+
     # 0.23 is hypothetical grass reference crop
     Tmax = daily['Tx_0909']
     Tmin = daily['Tn_0909']

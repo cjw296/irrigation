@@ -20,6 +20,12 @@ def load_daily():
 
 
 def load_hourly():
+    return read_sql("select * from observation where dataset='1hour_Level2'", db_url()).pivot(
+        index='timestamp', columns='variable', values='value'
+    )
+
+
+def load_hourly_maxmin():
     return read_sql("select * from observation where dataset='1hour_Level2_maxmin'", db_url()).pivot(
         index='timestamp', columns='variable', values='value'
     )
@@ -29,3 +35,11 @@ def daily_from_hourly(hourly, variables):
     origin = hourly.index.min().replace(hour=9)
     resampler = hourly[variables].resample('D', origin=origin, label='right')
     return resampler.agg({v: "max" if v.endswith('max') else 'min' for v in variables})
+
+
+def combined_data():
+    daily = load_daily()
+    hourly = load_hourly_maxmin()
+    daily[['P_max', 'P_min']] = daily_from_hourly(hourly, ['P_max', 'P_min']) * 0.1  # hPa to kPa
+    daily[['RH_max', 'RH_min']] = daily_from_hourly(hourly, ['RH_max', 'RH_min'])
+    return daily
