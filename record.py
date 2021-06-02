@@ -5,7 +5,7 @@ from dateutil.parser import parse as parse_date
 from sqlalchemy.orm import Session
 
 from data import connect
-from schema import Area, Observation, Water
+from schema import Observation, Water
 
 
 def irrigation(session: Session, area: str, minutes: float, at: datetime):
@@ -33,17 +33,15 @@ recorders = {f.__name__: f for f in (irrigation, level)}
 def main():
     parser = ArgumentParser()
     parser.add_argument('type', choices=list(recorders))
-    parser.add_argument('measurement', nargs='+', help='area:value')
+    parser.add_argument('area', )
+    parser.add_argument('value', type=float)
     parser.add_argument('--at', default=datetime.now(), type=parse_date)
     args = parser.parse_args()
 
     recorder = recorders[args.type]
     session = Session(connect(), future=True)
 
-    for measurement in args.measurement:
-        area, value = measurement.split(':')
-        value = float(value)
-        recorder(session, area, value, args.at)
+    recorder(session, args.area, args.value, args.at)
 
     session.commit()
 
