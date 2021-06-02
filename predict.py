@@ -7,12 +7,7 @@ from sqlalchemy.orm import Session
 
 from data import connect
 from download import main as download
-from schema import Observation
-
-ZONE_TO_MM_PER_MIN = {
-    'house': 0.097944482495229,
-    'terrace': 0.093639004859511,
-}
+from schema import Observation, Area
 
 WEEKLY_DESIRED_MM = 25.4
 
@@ -24,8 +19,7 @@ def last_sunday():
     return datetime.combine(dt, time(0, 0))
 
 
-def reading_uni_rainfall(start, end):
-    session = Session(connect(), future=True)
+def reading_uni_rainfall(session, start, end):
     rain, earliest, latest = session.execute(
         select(
             func.sum(Observation.value),
@@ -42,11 +36,11 @@ def reading_uni_rainfall(start, end):
     return rain
 
 
-def print_mm_still_needed(zone, mm_per_min, rain, watering, required=WEEKLY_DESIRED_MM):
-    received = watering * ZONE_TO_MM_PER_MIN[zone] + rain
+def print_mm_still_needed(area, mm_per_min, rain, required=WEEKLY_DESIRED_MM):
+    received = rain
     pct = received/required
     still_needed = max(required-received, 0)/mm_per_min
-    print(f'{zone.capitalize()} has had {received:.1f} mm ({pct:.0%}) '
+    print(f'{area.capitalize()} has had {received:.1f} mm ({pct:.0%}) '
           f'and needs {still_needed:.0f} mins of watering.')
 
 
@@ -59,17 +53,17 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('--start', default=now-timedelta(days=7), type=parse_date)
     parser.add_argument('--end', default=now, type=parse_date)
-    for zone in ZONE_TO_MM_PER_MIN:
-        parser.add_argument('--'+zone, type=comma_ints, default=0, help='watering this week (min)')
     args = parser.parse_args()
 
     download(['config'])
+    session = Session(connect(), future=True)
 
     print()
+    rain = reading_uni_rainfall(session, args.start, args.end)
 
-    rain = reading_uni_rainfall(args.start, args.end)
-    for zone, mm_per_min in ZONE_TO_MM_PER_MIN.items():
-        print_mm_still_needed(zone, mm_per_min, rain, watering=getattr(args, zone))
+    print()
+    for area in session.query(Area).where(Area.irrigation_rate > 0):
+        print_mm_still_needed(area.name, area.irrigation_rate, rain)
 
 
 if __name__ == '__main__':
