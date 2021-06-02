@@ -9,15 +9,12 @@ from schema import Area, Observation, Water
 
 
 def irrigation(session: Session, area: str, minutes: float, at: datetime):
-    mm_min = session.query(Area.irrigation_rate).filter_by(name=area).scalar()
-    if mm_min is None:
-        raise KeyError(f'{area!r} not found')
     session.add(Observation(
         timestamp=at,
         dataset='local',
         variable='irrigation',
         area_name=area,
-        value=round(mm_min*minutes, 1),
+        value=int(minutes),
     ))
 
 
