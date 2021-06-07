@@ -14,6 +14,16 @@ def inch_per_foot_to_mm_per_m(value):
     return value*2.54*10/(12*2.54/100)
 
 
+def mm_to_m3(height: float, area: float):
+    # area must be in m^2
+    return area*height/1000
+
+
+def m3_to_mm(volume: float, area: float):
+    # area must be in m^2
+    return 1000*volume/area
+
+
 def evapotranspiration(daily, latitude: float = None, altitude: float = None, α: float = 0.23):
 
     if latitude is None:
