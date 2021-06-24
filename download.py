@@ -18,6 +18,7 @@ RANGE_LIMITS = {
     'climat0900': 25,
     '1hour_Level2': 4,
     '1hour_Level2_maxmin': 4,
+    'climate_extract.cgi': 10,
 }
 
 
