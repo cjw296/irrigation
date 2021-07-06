@@ -114,8 +114,12 @@ def main(args=None):
                 where(Observation.variable.in_(variables)).
                 group_by(Observation.variable)
             )
-            dataset_start = min(row[1] for row in rows)+timedelta(seconds=1)
-            parameter_sets.append((dataset, variables.data, dataset_start, args.end))
+            try:
+                dataset_start = min(row[1] for row in rows)+timedelta(seconds=1)
+            except ValueError:
+                parser.error(f'Need to explicitly download {dataset} as least once!')
+            else:
+                parameter_sets.append((dataset, variables.data, dataset_start, args.end))
     else:
         if not args.variables:
             parser.error('variables must be specified')
