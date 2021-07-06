@@ -86,7 +86,8 @@ def sync(session, dataset: str, variables: List[str],
             obs_count += 1
     print(f'{dataset}: {row_count} rows giving {obs_count} observations, '
           f'latest at {latest_timestamp}')
-    session.commit()
+    if not debug:
+        session.commit()
 
 
 def main(args=None):
