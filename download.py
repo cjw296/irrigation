@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import re
 from argparse import ArgumentParser
 from csv import DictReader
 from datetime import datetime, timedelta
@@ -18,7 +19,7 @@ RANGE_LIMITS = {
     'climat0900': 25,
     '1hour_Level2': 4,
     '1hour_Level2_maxmin': 4,
-    'climate_extract.cgi': 10,
+    'climate_extract_cgi': 1000,  # 10 works if downloads aren't
 }
 
 
@@ -42,6 +43,52 @@ def download(dataset: str, variables: List[str], start: datetime, end: datetime)
     yield from reader
 
 
+MARKER = '=======A copy of your extracted data follows======'
+PATTERN = re.compile(r'<a href="(https://metdata.reading.ac.uk/cgi-bin/load_txt.csv\?[^.]+\.csv)">')
+
+
+def download_cgi(
+        dataset: str, variables: List[str], start: datetime, end: datetime
+) -> Iterable[dict]:
+    start += timedelta(days=1)
+    request = dict(
+        daybeg=start.strftime('%d'),
+        monthbeg=start.strftime('%b'),
+        yearbeg=start.strftime('%Y'),
+        dayend=end.strftime('%d'),
+        monthend=end.strftime('%b'),
+        yearend=end.strftime('%Y'),
+        nexttask='retrieve',
+    )
+    for variable in variables:
+        request[variable] = 'y'
+
+    response = requests.post(
+        'https://metdata.reading.ac.uk/cgi-bin/climate_extract.cgi',
+        data=request
+    )
+    content = response.text
+    try:
+        download_url = PATTERN.search(content).group(1)
+    except:
+        csv_text = content\
+                       .split(MARKER)[-1]\
+                       .replace('\n', '')\
+                       .replace('<br>', '\n')\
+                       .strip() + '\n'
+    else:
+        csv_text = requests.get(download_url).text.replace(' ', '')
+
+    for row in DictReader(StringIO(csv_text)):
+        row['TimeStamp'] = str(
+            datetime(*(int(row.pop(i)) for i in ('year', 'month', 'day')), hour=9)
+        )
+        yield row
+
+
+DOWNLOADERS = {'climate_extract_cgi': download_cgi}
+
+
 def time_periods(dataset: str, start: datetime, end: datetime):
     points = pd.date_range(start, end, freq=f'{RANGE_LIMITS[dataset]}D', closed='left')
     section_end = start
@@ -52,8 +99,11 @@ def time_periods(dataset: str, start: datetime, end: datetime):
 
 def retrieve(dataset: str, variables: List[str], start: datetime, end: datetime = None):
     end = end or datetime.now()
+    downloader = DOWNLOADERS.get(dataset, download)
     for start, end in time_periods(dataset, start, end):
-        yield from download(dataset, variables, start, end)
+        for actual, row in enumerate(downloader(dataset, variables, start, end), start=1):
+            row['TimeStamp'] = pd.Timestamp(row['TimeStamp'])
+            yield row
 
 
 def sync(session, dataset: str, variables: List[str],
@@ -73,9 +123,11 @@ def sync(session, dataset: str, variables: List[str],
             print(f'{dataset}:', ' '.join(f'{k}={v}' for k, v in row.items()))
         for variable in variables:
             value = row[variable]
-            if value == '':
+            if value in ('', 'x'):
                 continue
-            timestamp = pd.Timestamp(row['TimeStamp'])
+            if value == 'tr':
+                value = 0
+            timestamp = row['TimeStamp']
             latest_timestamp = max(latest_timestamp, timestamp)
             session.add(Observation(
                 timestamp=timestamp,
