@@ -167,11 +167,13 @@ def sync(session, dataset: str, variables: List[str],
         start = (start+pd.Timedelta(1, 'S')).ceil(frequency)
         end = end.floor(frequency)
         expected_timestamps = pd.date_range(start, end, freq=frequency)
+
     missing = set(expected_timestamps) - timestamps
     if missing:
         message = f'{len(missing)} missing: '+', '.join(str(m) for m in sorted(missing))
         if sorted(missing) == list(expected_timestamps[-len(missing):]):
-            print('WARNING '+message)
+            if len(missing) > 1:
+                print('WARNING '+message)
         else:
             raise AssertionError(message)
     unexpected = timestamps - set(expected_timestamps)
