@@ -2,7 +2,7 @@
 import re
 from argparse import ArgumentParser
 from csv import DictReader
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from io import StringIO
 from typing import Iterable, List
 
@@ -20,6 +20,14 @@ RANGE_LIMITS = {
     '1hour_Level2': 4,
     '1hour_Level2_maxmin': 4,
     'climate_extract_cgi': 1000,  # 10 works if downloads aren't
+}
+
+
+FREQUENCY = {
+    'climat0900': 'D',
+    '1hour_Level2': 'H',
+    '1hour_Level2_maxmin': 'H',
+    'climate_extract_cgi': 'D',
 }
 
 
@@ -48,9 +56,10 @@ PATTERN = re.compile(r'<a href="(https://metdata.reading.ac.uk/cgi-bin/load_txt.
 
 
 def download_cgi(
-        dataset: str, variables: List[str], start: datetime, end: datetime
+        dataset: str, variables: List[str], start: pd.Timestamp, end: pd.Timestamp
 ) -> Iterable[dict]:
-    start += timedelta(days=1)
+    if start.time() > time(9):
+        start += pd.Timedelta(1, 'D')
     request = dict(
         daybeg=start.strftime('%d'),
         monthbeg=start.strftime('%b'),
@@ -94,7 +103,7 @@ def time_periods(dataset: str, start: datetime, end: datetime):
     section_end = start
     for section_start, section_end in zip(points, points[1:]):
         yield section_start, section_end-pd.Timedelta(seconds=1)
-    yield section_end, end
+    yield section_end, pd.Timestamp(end)
 
 
 def retrieve(dataset: str, variables: List[str], start: datetime, end: datetime = None):
@@ -117,27 +126,58 @@ def sync(session, dataset: str, variables: List[str],
     ).delete(synchronize_session=False)
 
     obs_count = row_count = 0
+    timestamps = set()
     latest_timestamp = start
     for row_count, row in enumerate(retrieve(dataset, variables, start, end), start=1):
+
         if debug:
             print(f'{dataset}:', ' '.join(f'{k}={v}' for k, v in row.items()))
+
         for variable in variables:
+
             value = row[variable]
             if value in ('', 'x'):
                 continue
             if value == 'tr':
                 value = 0
+
             timestamp = row['TimeStamp']
+            timestamps.add(timestamp)
             latest_timestamp = max(latest_timestamp, timestamp)
+
             session.add(Observation(
                 timestamp=timestamp,
                 dataset=dataset,
                 variable=variable,
                 value=value
             ))
+
             obs_count += 1
+
     print(f'{dataset}: {row_count} rows giving {obs_count} observations, '
           f'latest at {latest_timestamp}')
+
+    frequency = FREQUENCY[dataset]
+    start = pd.Timestamp(start)
+    end = pd.Timestamp(end)
+    if frequency == 'D':
+        possible = pd.date_range(start.round('D') + pd.Timedelta(hours=9), end, freq='1D')
+        expected_timestamps = [ts for ts in possible if start <= ts <= end]
+    else:
+        start = (start+pd.Timedelta(1, 'S')).ceil(frequency)
+        end = end.floor(frequency)
+        expected_timestamps = pd.date_range(start, end, freq=frequency)
+    missing = set(expected_timestamps) - timestamps
+    if missing:
+        message = f'{len(missing)} missing: '+', '.join(str(m) for m in sorted(missing))
+        if sorted(missing) == list(expected_timestamps[-len(missing):]):
+            print('WARNING '+message)
+        else:
+            raise AssertionError(message)
+    unexpected = timestamps - set(expected_timestamps)
+    if unexpected:
+        raise AssertionError('Unexpected: '+', '.join(str(m) for m in sorted(unexpected)))
+
     if not debug:
         session.commit()
 
