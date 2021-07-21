@@ -3,6 +3,7 @@ from typing import Sequence
 
 from pandas import read_sql, DataFrame
 from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine, select, or_, func
 
 from config import config
 from schema import Observation
@@ -17,25 +18,27 @@ def connect():
     return create_engine(db_url(), echo=False)
 
 
-def load(dataset: str, start: datetime = None) -> DataFrame:
+def load(dataset: str, start: datetime = None, variables: Sequence[str] = None) -> DataFrame:
     query = select(Observation).where(Observation.dataset == dataset)
     if start:
         query = query.where(Observation.timestamp >= start)
+    if variables:
+        query = query.where(or_(Observation.variable == v for v in variables))
     return read_sql(query, db_url()).pivot(
         index='timestamp', columns='variable', values='value'
     )
 
 
-def load_daily(start: datetime = None) -> DataFrame:
-    return load('climat0900', start)
+def load_daily(start: datetime = None, variables: Sequence[str] = None) -> DataFrame:
+    return load('climat0900', start, variables)
 
 
-def load_hourly(start: datetime = None) -> DataFrame:
-    return load('1hour_Level2', start)
+def load_hourly(start: datetime = None, variables: Sequence[str] = None) -> DataFrame:
+    return load('1hour_Level2', start, variables)
 
 
-def load_hourly_maxmin(start: datetime = None) -> DataFrame:
-    return load('1hour_Level2_maxmin', start)
+def load_hourly_maxmin(start: datetime = None, variables: Sequence[str] = None) -> DataFrame:
+    return load('1hour_Level2_maxmin', start, variables)
 
 
 def agg_from_variable(variable: str) -> str:
