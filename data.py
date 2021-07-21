@@ -1,9 +1,9 @@
 from datetime import datetime
-from typing import Sequence
+from typing import Sequence, Union
 
-from pandas import read_sql, DataFrame
-from sqlalchemy import create_engine, select
+from pandas import read_sql, DataFrame, Series, Timedelta, concat, Timestamp, to_datetime
 from sqlalchemy import create_engine, select, or_, func
+from sqlalchemy.orm import Session
 
 from config import config
 from schema import Observation
@@ -16,6 +16,12 @@ def db_url():
 
 def connect():
     return create_engine(db_url(), echo=False)
+
+
+def just_after(source: Union[str, DataFrame, Series, datetime, Timestamp]) -> Timestamp:
+    if isinstance(source, (DataFrame, Series)):
+        source = source.index.max()
+    return to_datetime(source) + Timedelta(seconds=1)
 
 
 def load(dataset: str, start: datetime = None, variables: Sequence[str] = None) -> DataFrame:
@@ -54,6 +60,25 @@ def daily_from_hourly(hourly: DataFrame, variables: Sequence[str]) -> DataFrame:
     origin = hourly.index.min().replace(hour=9)
     resampler = hourly[variables].resample('D', origin=origin, label='right', closed='right')
     return resampler.agg({v: agg_from_variable(v) for v in variables})
+
+
+def daily_rainfall(start: datetime = None) -> Series:
+    manual = load('climate_extract_cgi', start)['RR']
+    auto = load('climat0900', start=just_after(manual), variables=['Rain_accum_0909'])
+    if auto.empty:
+        return manual
+    return concat([manual, auto['Rain_accum_0909']])
+
+
+def recent_rainfall() -> Series:
+    session = Session(connect(), future=True)
+    start = session.query(func.max(Observation.timestamp)).where(
+        Observation.variable.in_(['Rain_accum_0909', 'RR'])
+    ).scalar()
+    data = load_hourly(start=just_after(start), variables=['Rain'])
+    if data.empty:
+        return Series(dtype='float64')
+    return daily_from_hourly(data, ['Rain'])['Rain']
 
 
 def combined_data(start: datetime = None) -> DataFrame:
