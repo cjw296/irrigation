@@ -38,10 +38,19 @@ def load_hourly_maxmin(start: datetime = None) -> DataFrame:
     return load('1hour_Level2_maxmin', start)
 
 
+def agg_from_variable(variable: str) -> str:
+    if variable.endswith('max'):
+        return 'max'
+    elif variable.endswith('min'):
+        return 'min'
+    else:
+        return 'sum'
+
+
 def daily_from_hourly(hourly: DataFrame, variables: Sequence[str]) -> DataFrame:
     origin = hourly.index.min().replace(hour=9)
-    resampler = hourly[variables].resample('D', origin=origin, label='right')
-    return resampler.agg({v: "max" if v.endswith('max') else 'min' for v in variables})
+    resampler = hourly[variables].resample('D', origin=origin, label='right', closed='right')
+    return resampler.agg({v: agg_from_variable(v) for v in variables})
 
 
 def combined_data(start: datetime = None) -> DataFrame:
