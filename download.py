@@ -58,8 +58,8 @@ PATTERN = re.compile(r'<a href="(https://metdata.reading.ac.uk/cgi-bin/load_txt.
 def download_cgi(
         dataset: str, variables: List[str], start: pd.Timestamp, end: pd.Timestamp
 ) -> Iterable[dict]:
-    if start.time() > time(9):
-        start += pd.Timedelta(1, 'D')
+    if start.time() < time(9):
+        start -= pd.Timedelta(1, 'D')
     request = dict(
         daybeg=start.strftime('%d'),
         monthbeg=start.strftime('%b'),
@@ -90,7 +90,7 @@ def download_cgi(
 
     for row in DictReader(StringIO(csv_text)):
         row['TimeStamp'] = str(
-            datetime(*(int(row.pop(i)) for i in ('year', 'month', 'day')), hour=9)
+            datetime(*(int(row.get(i)) for i in ('year', 'month', 'day')), hour=9)+timedelta(days=1)
         )
         yield row
 
