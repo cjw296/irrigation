@@ -66,7 +66,11 @@ def agg_from_variable(variable: str) -> str:
 
 
 def daily_from_hourly(hourly: DataFrame, variables: Sequence[str]) -> DataFrame:
-    origin = hourly.index.min().replace(hour=9)
+    base = hourly.index.min()
+    origin = base.normalize()
+    if base - origin > Timedelta(hours=9):
+        origin += Timedelta(days=1)
+    origin += Timedelta(hours=9)
     resampler = hourly[variables].resample('D', origin=origin, label='right', closed='right')
     return resampler.agg({v: agg_from_variable(v) for v in variables})
 
