@@ -1,7 +1,11 @@
 from datetime import datetime
 from typing import Sequence, Union
 
-from pandas import read_sql, DataFrame, Series, Timedelta, concat, Timestamp, to_datetime
+from pandas import (
+    read_sql, DataFrame, Series, Timedelta, concat, Timestamp, to_datetime,
+    date_range
+)
+
 from sqlalchemy import create_engine, select, or_, func
 from sqlalchemy.orm import Session
 
@@ -22,6 +26,11 @@ def just_after(source: Union[str, DataFrame, Series, datetime, Timestamp]) -> Ti
     if isinstance(source, (DataFrame, Series)):
         source = source.index.max()
     return to_datetime(source) + Timedelta(seconds=1)
+
+
+def datetime_range(start: datetime, end: datetime, offset:Timedelta = Timedelta("9h")):
+    idx = date_range(start, end, normalize=True) + offset
+    return idx[(idx >= start) & (idx <= end)]
 
 
 def load(dataset: str, start: datetime = None, variables: Sequence[str] = None) -> DataFrame:

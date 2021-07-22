@@ -12,7 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from config import config
-from data import connect
+from data import connect, datetime_range
 from schema import Observation
 
 RANGE_LIMITS = {
@@ -161,8 +161,7 @@ def sync(session, dataset: str, variables: List[str],
     start = pd.Timestamp(start)
     end = pd.Timestamp(end)
     if frequency == 'D':
-        possible = pd.date_range(start.round('D') + pd.Timedelta(hours=9), end, freq='1D')
-        expected_timestamps = [ts for ts in possible if start <= ts <= end]
+        expected_timestamps = datetime_range(start, end)
     else:
         start = (start+pd.Timedelta(1, 'S')).ceil(frequency)
         end = end.floor(frequency)

@@ -15,10 +15,12 @@ dependencies:
   - bleach=3.3.0=pyh44b312d_0
   - bokeh=2.3.1=py39h6e9494a_0
   - brotlipy=0.7.0=py39hcbf5805_1001
-  - ca-certificates=2020.12.5=h033912b_0
-  - certifi=2020.12.5=py39h6e9494a_1
+  - ca-certificates=2021.5.30=h033912b_0
+  - certifi=2021.5.30=py39h6e9494a_0
   - cffi=1.14.5=py39h319c39b_0
   - chardet=4.0.0=py39h6e9494a_1
+  - colorama=0.4.4=pyh9f0ad1d_0
+  - commonmark=0.9.1=py_0
   - cryptography=3.4.7=py39ha2c9959_0
   - cycler=0.10.0=py_2
   - dbus=1.13.6=ha13b53f_2
@@ -27,6 +29,7 @@ dependencies:
   - entrypoints=0.3=pyhd8ed1ab_1003
   - expat=2.3.0=he49afe7_0
   - freetype=2.10.4=h4cff582_1
+  - future=0.18.2=py39h6e9494a_3
   - gettext=0.19.8.1=h7937167_1005
   - glib=2.68.1=he49afe7_0
   - glib-tools=2.68.1=he49afe7_0
@@ -34,6 +37,7 @@ dependencies:
   - icu=68.1=h74dc148_0
   - idna=2.10=pyh9f0ad1d_0
   - importlib-metadata=4.0.1=py39h6e9494a_0
+  - iniconfig=1.1.1=pyh9f0ad1d_0
   - ipykernel=5.5.3=py39h71a6800_0
   - ipython=7.22.0=py39h71a6800_0
   - ipython_genutils=0.2.0=py_1
@@ -76,6 +80,7 @@ dependencies:
   - matplotlib=3.4.1=py39h6e9494a_0
   - matplotlib-base=3.4.1=py39hb07454d_0
   - mistune=0.8.4=py39hcbf5805_1003
+  - more-itertools=8.8.0=pyhd8ed1ab_0
   - mysql-common=8.0.23=h694c41f_1
   - mysql-libs=8.0.23=hbeb7981_1
   - nbclient=0.5.3=pyhd8ed1ab_0
@@ -100,11 +105,13 @@ dependencies:
   - pickleshare=0.7.5=py_1003
   - pillow=8.1.2=py39h5fdd921_1
   - pip=21.0.1=pyhd8ed1ab_0
+  - pluggy=0.13.1=py39h6e9494a_4
   - prometheus_client=0.10.1=pyhd8ed1ab_0
   - prompt-toolkit=3.0.18=pyha770c72_0
   - prompt_toolkit=3.0.18=hd8ed1ab_0
   - psycopg2=2.8.6=py39h4e61a6a_2
   - ptyprocess=0.7.0=pyhd3deb0d_0
+  - py=1.10.0=pyhd3deb0d_0
   - pycparser=2.20=pyh9f0ad1d_2
   - pygments=2.8.1=pyhd8ed1ab_0
   - pyopenssl=20.0.1=pyhd8ed1ab_0
@@ -116,6 +123,7 @@ dependencies:
   - pyqtwebengine=5.12.1=py39hef7122c_7
   - pyrsistent=0.17.3=py39hcbf5805_2
   - pysocks=1.7.1=py39h6e9494a_3
+  - pytest=6.2.4=py39h6e9494a_0
   - python=3.9.2=h2502468_0_cpython
   - python-dateutil=2.8.1=py_0
   - python-editor=1.0.4=py_0
@@ -128,14 +136,18 @@ dependencies:
   - qtpy=1.9.0=py_0
   - readline=8.1=h05e3726_0
   - requests=2.25.1=pyhd3deb0d_0
+  - rich=10.3.0=py39h6e9494a_0
+  - scipy=1.6.2=py39h056f1c0_0
   - send2trash=1.5.0=py_0
   - setuptools=49.6.0=py39h6e9494a_3
   - six=1.15.0=pyh9f0ad1d_0
   - sqlalchemy=1.4.11=py39h89e85a6_0
   - sqlite=3.35.5=h44b9ce1_0
+  - tabulate=0.8.9=pyhd8ed1ab_0
   - terminado=0.9.4=py39h6e9494a_0
   - testpath=0.4.4=py_0
   - tk=8.6.10=h0419947_1
+  - toml=0.10.2=pyhd8ed1ab_0
   - tornado=6.1=py39hcbf5805_1
   - traitlets=5.0.5=py_0
   - typing_extensions=3.7.4.3=py_0
@@ -154,4 +166,3 @@ dependencies:
   - pip:
     - configurator==2.6.0
 prefix: /Users/chris/miniconda3/envs/irrigation
-
