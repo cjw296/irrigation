@@ -5,6 +5,8 @@ from dateutil.parser import parse as parse_date
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from calc import mm_to_m3
+from config import config
 from data import connect
 from download import main as download
 from schema import Observation, Area
@@ -41,7 +43,7 @@ def print_mm_still_needed(area, mm_per_min, rain, required=WEEKLY_DESIRED_MM):
     pct = received/required
     still_needed = max(required-received, 0)/mm_per_min
     print(f'{area.capitalize()} has had {received:.1f} mm ({pct:.0%}) '
-          f'and needs {still_needed:.0f} mins of watering.')
+          f'and needs {still_needed:.0f} mins of watering.', end=' ')
 
 
 def comma_ints(text):
@@ -61,9 +63,26 @@ def main():
     print()
     rain = reading_uni_rainfall(session, args.start, args.end)
 
+    tank_current = config.tanks.tap
+    tank_pct = tank_current / config.tanks.max
+    print(f'Tanks currently at {tank_current:.0f}mm ({tank_pct:.0%})')
+    tank_size = session.query(Area.size).filter_by(name='tanks').scalar()
+
+    tank_volume = mm_to_m3(tank_current, tank_size)
+    tank_tap = mm_to_m3(config.tanks.tap, tank_size)
+    tank_min = mm_to_m3(config.tanks.min, tank_size)
+    refill_rate = mm_to_m3(config.tanks.refill, tank_size)
+
     print()
     for area in session.query(Area).where(Area.irrigation_rate > 0):
         print_mm_still_needed(area.name, area.irrigation_rate, rain)
+        area_rate = mm_to_m3(area.irrigation_rate, area.size)
+
+        runtime = 0
+        if tank_volume > tank_tap:
+            runtime += (tank_volume - tank_tap)/area_rate
+        runtime += (max(tank_volume, tank_tap)-tank_min)/(area_rate-refill_rate)
+        print(f'Tank can support {runtime:.0f} mins watering.')
 
 
 if __name__ == '__main__':
