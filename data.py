@@ -6,11 +6,11 @@ from pandas import (
     date_range
 )
 
-from sqlalchemy import create_engine, select, or_, func
+from sqlalchemy import create_engine, select, or_, func, and_
 from sqlalchemy.orm import Session
 
 from config import config
-from schema import Observation
+from schema import Observation, Area
 
 
 def db_url():
@@ -92,6 +92,25 @@ def recent_rainfall() -> Series:
     if data.empty:
         return Series(dtype='float64')
     return daily_from_hourly(data, ['Rain'])['Rain']
+
+
+def irrigation(area: str, start: datetime = None) -> DataFrame:
+    query = select(Observation.timestamp, Observation.value.label('mins')) \
+        .where(and_(Observation.dataset == 'local',
+                    Observation.variable == 'irrigation',
+                    Observation.area_name == area))
+    if start:
+        query = query.where(Observation.timestamp >= start)
+    data = read_sql(query, db_url(), index_col="timestamp")
+    data.index = data.index.normalize() + Timedelta(hours=10)
+    mins = daily_from_hourly(data.loc[start:], ['mins'])['mins']
+
+    session = Session(connect(), future=True)
+    rate = session.query(Area.irrigation_rate).where(Area.name == area).scalar()
+
+    irrigation = mins * rate
+    irrigation.name = 'Irrigation'
+    return irrigation
 
 
 def combined_data(start: datetime = None) -> DataFrame:
