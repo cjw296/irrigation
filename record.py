@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 from datetime import datetime
 
 from dateutil.parser import parse as parse_date
+from pandas import Timestamp
 from sqlalchemy.orm import Session
 
 from config import config
@@ -36,7 +37,7 @@ def main():
     parser.add_argument('type', choices=list(recorders))
     parser.add_argument('area', )
     parser.add_argument('value')
-    parser.add_argument('--at', default=datetime.now(), type=parse_date)
+    parser.add_argument('--at', default=Timestamp.now(), type=Timestamp)
     args = parser.parse_args()
 
     recorder = recorders[args.type]
