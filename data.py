@@ -99,4 +99,5 @@ def combined_data(start: datetime = None) -> DataFrame:
     hourly = load_hourly_maxmin(start)
     daily[['P_max', 'P_min']] = daily_from_hourly(hourly, ['P_max', 'P_min']) * 0.1  # hPa to kPa
     daily[['RH_max', 'RH_min']] = daily_from_hourly(hourly, ['RH_max', 'RH_min'])
+    daily['Rain'] = daily_rainfall(start)
     return daily
