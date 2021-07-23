@@ -4,6 +4,7 @@ from datetime import datetime
 from dateutil.parser import parse as parse_date
 from sqlalchemy.orm import Session
 
+from config import config
 from data import connect
 from schema import Observation, Water
 
@@ -34,14 +35,15 @@ def main():
     parser = ArgumentParser()
     parser.add_argument('type', choices=list(recorders))
     parser.add_argument('area', )
-    parser.add_argument('value', type=float)
+    parser.add_argument('value')
     parser.add_argument('--at', default=datetime.now(), type=parse_date)
     args = parser.parse_args()
 
     recorder = recorders[args.type]
     session = Session(connect(), future=True)
 
-    recorder(session, args.area, args.value, args.at)
+    value = float(config.tanks.get(args.value, args.value))
+    recorder(session, args.area, value, args.at)
 
     session.commit()
 
