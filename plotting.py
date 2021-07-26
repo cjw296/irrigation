@@ -1,10 +1,10 @@
 from collections import Sequence
+from itertools import cycle
 
 from bokeh.models import LinearAxis, Range1d, Legend, BoxAnnotation
 from bokeh.palettes import Category10_10
 from bokeh.plotting import figure, show
-from pandas import DataFrame, Timestamp
-
+from pandas import DataFrame, Timestamp, Series
 
 LEVELS = [
     'Water',
@@ -21,7 +21,10 @@ CHANGES = [
 ]
 
 
-def plot_water_model(data: DataFrame, annotations: Sequence[BoxAnnotation] = (), title: str = None):
+def plot_water_model(data: DataFrame, annotations: Sequence[BoxAnnotation] = (),
+                     title: str = None,
+                     left_series: Sequence[Series] = (),
+                     right_series: Sequence[Series] = ()):
     p = figure(sizing_mode='scale_width', height=150, title=title,
                x_axis_type="datetime", x_range=(Timestamp('2021'), data.index.max()),
                tools='xpan,pan,xwheel_zoom,wheel_zoom,reset',
@@ -36,12 +39,18 @@ def plot_water_model(data: DataFrame, annotations: Sequence[BoxAnnotation] = (),
         Legend(label_text_font_size='7px', label_height=10, spacing=0, glyph_height=10), 'right'
     )
 
-    colors = iter(Category10_10)
+    colors = cycle(Category10_10)
 
     for series, color in zip(LEVELS, colors):
         p.line(data.index, data[series], color=color, legend_label=series)
 
     for series, color in zip(CHANGES, colors):
         p.step(data.index, data[series], color=color, legend_label=series, y_range_name='y2')
+
+    for series, color in zip(left_series, colors):
+        p.line(series.index, series, color=color, legend_label=series.name)
+
+    for series, color in zip(right_series, colors):
+        p.step(series.index, series, color=color, legend_label=series.name, y_range_name='y2')
 
     show(p)
