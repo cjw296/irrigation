@@ -13,8 +13,6 @@ soil_config = config.soil
 
 @dataclass
 class Water:
-    initial: float = 0
-
     minimum: float = 0
     permanent_wilting_point: float = soil_config.permanent_wilting_point
     refill_point: float = soil_config.refill_point
@@ -23,9 +21,9 @@ class Water:
 
     drain_rate: float = 3  # in days
     rain_field: str = 'Rain'
+    current: float = 0
 
     def __post_init__(self):
-        self.current = self.initial
         assert self.drain_rate >= 1
 
     def __call__(self, row):
@@ -49,7 +47,7 @@ class Water:
         if data is None:
             data = combined_data(start)
         if initial is not None:
-            self.initial = initial
+            self.current = initial
         if start is not None:
             data = data.loc[start:]
 
@@ -58,7 +56,7 @@ class Water:
             'Evapotranspiration': evapotranspiration_series,
             'Rain': data[self.rain_field],
             'Irrigation': irrigation,
-            'Water': self.initial,
+            'Water': self.current,
             'Field Capacity': self.field_capacity,
             'Saturation Capacity': self.saturation_capacity,
             'Refill Point': soil_config.refill_point,
