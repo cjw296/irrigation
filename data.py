@@ -94,7 +94,7 @@ def recent_rainfall() -> Series:
     return daily_from_hourly(data, ['Rain'])['Rain']
 
 
-def irrigation(area: str, start: datetime = None) -> DataFrame:
+def irrigation(area: str, start: datetime = None) -> Series:
     query = select(Observation.timestamp, Observation.value.label('mins')) \
         .where(and_(Observation.dataset == 'local',
                     Observation.variable == 'irrigation',
