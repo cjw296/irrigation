@@ -1,7 +1,6 @@
 from argparse import ArgumentParser
 from datetime import datetime
 
-from dateutil.parser import parse as parse_date
 from pandas import Timestamp
 from sqlalchemy.orm import Session
 
@@ -47,6 +46,7 @@ def main():
     recorder(session, args.area, value, args.at)
 
     session.commit()
+    print(f'recorded {args.area} {args.type} of {value} at {args.at}')
 
 
 if __name__ == '__main__':
