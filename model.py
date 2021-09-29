@@ -37,10 +37,9 @@ class Water:
     def run(
             self,
             data: DataFrame = None,
-            *,
+            irrigation: Union[float, Series] = 0,
             initial: float = None,
             start: datetime = None,
-            irrigation: Union[float, Series] = 0,
             calculate_evapotranspiration=evapotranspiration
     ) -> DataFrame:
 
