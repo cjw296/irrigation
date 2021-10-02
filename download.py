@@ -116,7 +116,7 @@ def retrieve(dataset: str, variables: List[str], start: datetime, end: datetime 
 
 
 def sync(session, dataset: str, variables: List[str],
-         start: pd.Timestamp, end: pd.Timestamp, debug: bool):
+         start: pd.Timestamp, end: pd.Timestamp, debug: bool, force: bool):
 
     session.query(Observation).where(
         Observation.timestamp.between(start, end),
@@ -169,8 +169,9 @@ def sync(session, dataset: str, variables: List[str],
 
     missing = set(expected_timestamps) - timestamps
     if missing:
-        message = f'{len(missing)} missing: '+', '.join(str(m) for m in sorted(missing))
-        if sorted(missing) == list(expected_timestamps[-len(missing):]):
+        missing_text = ', '.join(str(m) for m in sorted(missing))
+        message = f'{len(missing)} missing for {dataset}: {missing_text}'
+        if sorted(missing) == list(expected_timestamps[-len(missing):]) or force:
             if len(missing) > 1:
                 print('WARNING '+message)
         else:
@@ -190,10 +191,11 @@ def main(args=None):
     parser.add_argument('dataset')
     parser.add_argument('variables', nargs='*')
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('--start', type=pd.Timestamp, default=now-timedelta(days=7))
+    group.add_argument('--start', type=pd.Timestamp)
     group.add_argument('--days', type=int)
     parser.add_argument('--end', type=pd.Timestamp, default=now)
     parser.add_argument('--debug', action='store_true')
+    parser.add_argument('--force', action='store_true')
     args = parser.parse_args(args)
 
     start = (pd.Timestamp.now() - timedelta(days=args.days)).floor('D') if args.days else args.start
@@ -203,24 +205,27 @@ def main(args=None):
     parameter_sets = []
     if args.dataset == 'config':
         for dataset, variables in config.observations.items():
-            rows = session.execute(
-                select(Observation.variable, func.max(Observation.timestamp)).
-                where(Observation.variable.in_(variables)).
-                group_by(Observation.variable)
-            )
-            try:
-                dataset_start = min(row[1] for row in rows)+timedelta(seconds=1)
-            except ValueError:
-                parser.error(f'Need to explicitly download {dataset} as least once!')
+            if start:
+                dataset_start = start
             else:
-                parameter_sets.append((dataset, variables.data, dataset_start, args.end))
+                rows = session.execute(
+                    select(Observation.variable, func.max(Observation.timestamp)).
+                    where(Observation.variable.in_(variables)).
+                    group_by(Observation.variable)
+                )
+                try:
+                    dataset_start = min(row[1] for row in rows)+timedelta(seconds=1)
+                except ValueError:
+                    parser.error(f'Need to explicitly download {dataset} as least once!')
+                    raise
+            parameter_sets.append((dataset, variables.data, dataset_start, args.end))
     else:
         if not args.variables:
             parser.error('variables must be specified')
-        parameter_sets.append((args.dataset, args.variables, start, args.end))
+        parameter_sets.append((args.dataset, args.variables, start or now-timedelta(days=7), args.end))
 
     for parameter_set in parameter_sets:
-        sync(session, *parameter_set, debug=args.debug)
+        sync(session, *parameter_set, debug=args.debug, force=args.force)
 
 
 if __name__ == '__main__':
