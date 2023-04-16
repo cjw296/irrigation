@@ -178,7 +178,11 @@ def sync(session, dataset: str, variables: List[str],
             raise AssertionError(message)
     unexpected = timestamps - set(expected_timestamps)
     if unexpected:
-        raise AssertionError('Unexpected: '+', '.join(str(m) for m in sorted(unexpected)))
+        message = 'Unexpected: ' + ', '.join(str(m) for m in sorted(unexpected))
+        if force:
+            print(message)
+        else:
+            raise AssertionError(message)
 
     if not debug:
         session.commit()
